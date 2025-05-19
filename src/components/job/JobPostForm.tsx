@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ const JobPostForm = () => {
     category: "",
     subcategory: "",
     description: "",
-    skills: [],
+    skills: [] as string[],
     paymentType: "fixed",
     budget: {
       min: "",
@@ -86,7 +85,7 @@ const JobPostForm = () => {
       setFormData({
         ...formData,
         [parent]: {
-          ...formData[parent as keyof typeof formData],
+          ...formData[parent as keyof typeof formData] as Record<string, any>,
           [child]: value
         }
       });
@@ -96,7 +95,9 @@ const JobPostForm = () => {
     
     // Clear errors
     if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
     }
   };
 
@@ -106,7 +107,7 @@ const JobPostForm = () => {
       setFormData({
         ...formData,
         [parent]: {
-          ...formData[parent as keyof typeof formData],
+          ...formData[parent as keyof typeof formData] as Record<string, any>,
           [child]: value
         }
       });
@@ -116,7 +117,9 @@ const JobPostForm = () => {
     
     // Clear errors
     if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
     }
   };
 

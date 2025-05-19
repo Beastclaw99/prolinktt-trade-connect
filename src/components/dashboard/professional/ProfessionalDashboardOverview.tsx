@@ -1,9 +1,9 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BriefcaseBusiness, Clock, DollarSign, Star, MessageSquare, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { cn } from "@/lib/utils";
 
 const ProfessionalDashboardOverview = () => {
   // Mock data for dashboard statistics

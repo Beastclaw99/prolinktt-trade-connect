@@ -1,149 +1,150 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+
+const formSchema = z.object({
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z.string().min(1, {
+    message: "Password is required.",
+  }),
+  rememberMe: z.boolean().optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 const LoginForm = () => {
-  const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    rememberMe: false
+  const { signIn } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    },
   });
-  
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
     
-    // Clear errors when user types
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+    try {
+      await signIn(data.email, data.password);
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  const handleCheckboxChange = (checked: boolean) => {
-    setFormData({ ...formData, rememberMe: checked });
-  };
-  
-  const validateForm = () => {
-    let valid = true;
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-      valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-      valid = false;
-    }
-    
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-      valid = false;
-    }
-    
-    setErrors(newErrors);
-    return valid;
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      // Simulate login and determine user type based on email
-      // In a real app, this would be handled by authentication service
-      console.log("Login data:", formData);
-      
-      // For demo purposes, email determines account type
-      // In real app, this would come from your auth backend
-      const isClient = formData.email.includes('client');
-      const dashboardRoute = isClient ? '/client-dashboard' : '/professional-dashboard';
-      
-      navigate(dashboardRoute);
-    }
-  };
-  
+
   return (
-    <div className="w-full max-w-md">
-      <Card className="border shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Log In</CardTitle>
-          <CardDescription className="text-center">
-            Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-2xl">Login to ProLinkTT</CardTitle>
+        <CardDescription>
+          Access your account to manage jobs and services.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="john@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Password</FormLabel>
+                    <Link to="#" className="text-xs text-prolink-blue hover:underline">
+                      Forgot Password?
+                    </Link>
+                  </div>
+                  <FormControl>
+                    <Input type="password" placeholder="********" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-xs text-prolink-blue hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-              />
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password}</p>
+            />
+
+            <FormField
+              control={form.control}
+              name="rememberMe"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Remember me</FormLabel>
+                  </div>
+                </FormItem>
               )}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="rememberMe" 
-                checked={formData.rememberMe}
-                onCheckedChange={handleCheckboxChange}
-              />
-              <label
-                htmlFor="rememberMe"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Remember me for 30 days
-              </label>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full btn-primary">
-              Log In
+            />
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
+                </>
+              ) : (
+                "Log In"
+              )}
             </Button>
-            
-            <p className="text-sm text-gray-600 text-center">
-              Don't have an account? <Link to="/register" className="text-prolink-blue hover:underline">Sign up</Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex justify-center">
+        <div className="text-sm">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-prolink-blue hover:underline font-medium">
+            Sign up
+          </Link>
+        </div>
+      </CardFooter>
+    </Card>
   );
 };
 

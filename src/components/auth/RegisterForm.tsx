@@ -1,198 +1,259 @@
 
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BriefcaseBusiness, User } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+
+const formSchema = z.object({
+  firstName: z.string().min(2, {
+    message: "First name must be at least 2 characters.",
+  }),
+  lastName: z.string().min(2, {
+    message: "Last name must be at least 2 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
+  }),
+  confirmPassword: z.string(),
+  role: z.enum(["client", "professional"], {
+    required_error: "Please select a user type.",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 const RegisterForm = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const initialType = queryParams.get('type') === 'professional' ? 'professional' : 'client';
-  const [accountType, setAccountType] = useState<string>(initialType);
-  
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
+  const { signUp } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "client",
+    },
   });
-  
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
     
-    // Clear errors when user types
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+    try {
+      await signUp(data.email, data.password, {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        role: data.role,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
-  const validateForm = () => {
-    let valid = true;
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = "Full name is required";
-      valid = false;
-    }
-    
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-      valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-      valid = false;
-    }
-    
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-      valid = false;
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-      valid = false;
-    }
-    
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-      valid = false;
-    }
-    
-    setErrors(newErrors);
-    return valid;
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      // In a real app, you would handle registration with a backend service
-      console.log("Account type:", accountType);
-      console.log("Registration data:", formData);
-      
-      // Redirect to dashboard based on account type
-      const dashboardRoute = accountType === 'professional' 
-        ? '/professional-dashboard' 
-        : '/client-dashboard';
-        
-      navigate(dashboardRoute);
-    }
-  };
-  
+
   return (
-    <div className="w-full max-w-md">
-      <Card className="border shadow-lg">
-        <Tabs value={accountType} onValueChange={setAccountType}>
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
-            <CardDescription className="text-center">
-              Choose your account type and fill in your details
-            </CardDescription>
-            <TabsList className="grid grid-cols-2 mt-4">
-              <TabsTrigger value="client" className="data-[state=active]:bg-prolink-blue data-[state=active]:text-white">
-                <BriefcaseBusiness className="mr-2 h-4 w-4" />
-                Client
-              </TabsTrigger>
-              <TabsTrigger value="professional" className="data-[state=active]:bg-prolink-green data-[state=active]:text-white">
-                <User className="mr-2 h-4 w-4" />
-                Professional
-              </TabsTrigger>
-            </TabsList>
-          </CardHeader>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="text-2xl">Create an Account</CardTitle>
+        <CardDescription>
+          Join ProLinkTT to connect with skilled professionals or find jobs.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <FormField
+                control={form.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <TabsContent value="client">
-                <p className="text-sm text-gray-600 mb-4">
-                  Create a client account to post jobs and hire trade professionals
-                </p>
-              </TabsContent>
-              
-              <TabsContent value="professional">
-                <p className="text-sm text-gray-600 mb-4">
-                  Create a professional account to find jobs and showcase your skills
-                </p>
-              </TabsContent>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="john@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                />
-                {errors.fullName && (
-                  <p className="text-sm text-red-500">{errors.fullName}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Create a password"
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm your password"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-sm text-red-500">{errors.confirmPassword}</p>
-                )}
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className={`w-full ${accountType === 'client' ? 'btn-primary' : 'btn-secondary'}`}>
-                Create Account
-              </Button>
-              
-              <p className="text-sm text-gray-600 text-center">
-                Already have an account? <Link to="/login" className="text-prolink-blue hover:underline">Log in</Link>
-              </p>
-            </CardFooter>
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="********" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="********" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>I want to...</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      className="flex flex-col md:flex-row gap-4"
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormItem className="flex-1">
+                        <label
+                          htmlFor="client"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 cursor-pointer hover:bg-accent aria-checked:border-primary"
+                          data-state={field.value === "client" ? "checked" : "unchecked"}
+                        >
+                          <FormControl>
+                            <RadioGroupItem value="client" id="client" className="sr-only" />
+                          </FormControl>
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M19 16V7C19 5.89543 18.1046 5 17 5H7C5.89543 5 5 5.89543 5 7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M3 16H21V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M12 5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <div className="font-medium">Hire Professionals</div>
+                            <div className="text-xs text-muted-foreground text-center">Post jobs and hire skilled tradespeople</div>
+                          </div>
+                        </label>
+                      </FormItem>
+
+                      <FormItem className="flex-1">
+                        <label
+                          htmlFor="professional"
+                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 cursor-pointer hover:bg-accent aria-checked:border-primary"
+                          data-state={field.value === "professional" ? "checked" : "unchecked"}
+                        >
+                          <FormControl>
+                            <RadioGroupItem value="professional" id="professional" className="sr-only" />
+                          </FormControl>
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M14 6L16.5 3.5L18 5L15.5 7.5M14 6L15.5 7.5M14 6L11.5 8.5M15.5 7.5L11.5 11.5M11.5 8.5L4 16V20H8L15.5 12.5M11.5 8.5L11.5 11.5M11.5 11.5L15.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <div className="font-medium">Find Work</div>
+                            <div className="text-xs text-muted-foreground text-center">Browse job listings and offer your services</div>
+                          </div>
+                        </label>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
+            </Button>
           </form>
-        </Tabs>
-      </Card>
-    </div>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex flex-col space-y-2">
+        <div className="text-sm text-center">
+          By signing up, you agree to our{" "}
+          <Link to="#" className="text-prolink-blue hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link to="#" className="text-prolink-blue hover:underline">
+            Privacy Policy
+          </Link>
+          .
+        </div>
+        <div className="text-sm text-center">
+          Already have an account?{" "}
+          <Link to="/login" className="text-prolink-blue hover:underline font-medium">
+            Sign in
+          </Link>
+        </div>
+      </CardFooter>
+    </Card>
   );
 };
 

@@ -1,90 +1,102 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Message } from "@/types/supabase";
+import { v4 as uuidv4 } from 'uuid';
 
-export const messageService = {
-  async sendMessage(messageData: Omit<Message, "id" | "created_at">): Promise<Message | null> {
+export interface Message {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export const sendMessage = async (
+  senderId: string,
+  receiverId: string,
+  content: string
+): Promise<Message | null> => {
+  try {
+    const messageId = uuidv4();
     const { data, error } = await supabase
       .from('messages')
-      .insert(messageData)
+      .insert([
+        {
+          id: messageId,
+          sender_id: senderId,
+          receiver_id: receiverId,
+          content,
+          timestamp: new Date().toISOString(),
+          read: false,
+        },
+      ])
       .select()
       .single();
 
     if (error) {
       console.error("Error sending message:", error);
-      throw error;
+      return null;
     }
 
-    return data;
-  },
+    return data as Message;
+  } catch (error) {
+    console.error("Error sending message:", error);
+    return null;
+  }
+};
 
-  async getConversation(userId1: string, userId2: string, jobId?: string): Promise<Message[]> {
-    let query = supabase
+export const getMessagesBetweenUsers = async (
+  userId1: string,
+  userId2: string
+): Promise<Message[]> => {
+  try {
+    const { data, error } = await supabase
       .from('messages')
       .select('*')
-      .or(`sender_id.eq.${userId1},recipient_id.eq.${userId1}`)
-      .or(`sender_id.eq.${userId2},recipient_id.eq.${userId2}`)
-      .order('created_at', { ascending: true });
-
-    if (jobId) {
-      query = query.eq('job_id', jobId);
-    }
-
-    const { data, error } = await query;
+      .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
+      .order('timestamp', { ascending: true });
 
     if (error) {
-      console.error("Error fetching conversation:", error);
-      throw error;
+      console.error("Error fetching messages:", error);
+      return [];
     }
 
-    return data || [];
-  },
+    return data as Message[];
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    return [];
+  }
+};
 
-  async getConversations(userId: string): Promise<any[]> {
-    // This query gets the most recent message from each distinct conversation
-    const { data, error } = await supabase.rpc('get_user_conversations', {
-      user_id: userId
-    });
-
-    if (error) {
-      console.error("Error fetching conversations:", error);
-      throw error;
-    }
-
-    return data || [];
-  },
-
-  async markAsRead(messageIds: string[]): Promise<void> {
+export const markMessageAsRead = async (messageId: string): Promise<void> => {
+  try {
     const { error } = await supabase
       .from('messages')
       .update({ read: true })
-      .in('id', messageIds);
+      .eq('id', messageId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    throw error;
+  }
+};
+
+export const getUnreadMessagesCount = async (userId: string): Promise<number> => {
+  try {
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact' })
+      .eq('receiver_id', userId)
+      .eq('read', false);
 
     if (error) {
-      console.error("Error marking messages as read:", error);
-      throw error;
+      console.error("Error fetching unread messages count:", error);
+      return 0;
     }
-  },
 
-  subscribeToNewMessages(userId: string, callback: (message: Message) => void): () => void {
-    const channel = supabase
-      .channel('public:messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `recipient_id=eq.${userId}`
-        },
-        (payload) => {
-          callback(payload.new as Message);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return count || 0;
+  } catch (error) {
+    console.error("Error fetching unread messages count:", error);
+    return 0;
   }
 };

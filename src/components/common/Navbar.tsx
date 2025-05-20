@@ -13,11 +13,11 @@ import {
 import { Menu, X, User, Bell, MessageSquare, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile"; // Fixed import name
 
 const Navbar = () => {
   const { user, profile, signOut } = useAuth();
-  const { isMobile } = useMobile();
+  const isMobile = useIsMobile(); // Use the correct hook directly
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 

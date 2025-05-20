@@ -1,150 +1,58 @@
+import { useQuery, useMutation, UseQueryOptions, UseMutationOptions, QueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-import { useAuth } from "@/contexts/AuthContext";
-import { Database } from "@/integrations/supabase/types";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { useQuery, useMutation, useQueryClient, QueryKey } from "@tanstack/react-query";
-import { PostgrestError } from "@supabase/supabase-js";
+// Generic type for the return data
+type Data<T> = T extends { data?: infer U } ? U : T;
 
-// Type helper for Supabase tables
-export type Tables = Database['public']['Tables'];
-export type TablesNames = keyof Tables;
+// Generic type for the error
+type Error = any;
 
-// Generic typed hook to fetch data from any Supabase table
-export function useSupabaseQuery<T extends TablesNames>(
-  table: T,
-  options: {
-    queryKey: QueryKey;
-    select?: string;
-    match?: Record<string, any>;
-    order?: { column: string; ascending?: boolean };
-    limit?: number;
-    single?: boolean;
-    enabled?: boolean;
-    filters?: (query: any) => any;
-  }
+// Generic type for the params
+type Params<T> = T extends { params?: infer U } ? U : T;
+
+// useSupabaseQuery hook
+export function useSupabaseQuery<
+  T extends (...args: any) => any,
+  TQueryFnData = Data<Awaited<ReturnType<T>>>,
+  TError = Error,
+  TData = TQueryFnData
+>(
+  fn: T,
+  params: Params<ReturnType<T>>,
+  options?: Omit<UseQueryOptions<TQueryFnData, TError, TData>, 'queryKey' | 'queryFn'>
 ) {
-  const { session } = useAuth();
-  const { toast } = useToast();
+  const queryKey = [String(fn.name), params];
 
-  return useQuery({
-    queryKey: options.queryKey,
+  return useQuery<TQueryFnData, TError, TData>({
+    queryKey,
     queryFn: async () => {
-      try {
-        let query = supabase
-          .from(table)
-          .select(options.select || '*');
-
-        // Apply custom filters if provided
-        if (options.filters) {
-          query = options.filters(query);
-        }
-
-        // Apply match conditions
-        if (options.match) {
-          Object.entries(options.match).forEach(([key, value]) => {
-            query = query.eq(key, value);
-          });
-        }
-
-        // Apply ordering
-        if (options.order) {
-          query = query.order(options.order.column, { ascending: options.order.ascending ?? false });
-        }
-
-        // Apply limit
-        if (options.limit) {
-          query = query.limit(options.limit);
-        }
-
-        // Get single result or multiple
-        const { data, error } = options.single
-          ? await query.single()
-          : await query;
-
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        if (error instanceof Error) {
-          toast({
-            title: "Error fetching data",
-            description: error.message,
-            variant: "destructive"
-          });
-        }
-        throw error;
-      }
+      const result = await fn(params);
+      return (result as any)?.data;
     },
-    enabled: !!session && (options.enabled !== false)
+    ...options,
   });
 }
 
-// Generic mutation hook for Supabase tables
-export function useSupabaseMutation<T extends TablesNames>(
-  table: T,
-  options: {
-    queryKey: QueryKey;
-    operation: 'insert' | 'update' | 'delete';
-    match?: Record<string, any>;
-    onSuccess?: () => void;
-  }
+// useSupabaseMutation hook
+export function useSupabaseMutation<
+  T extends (...args: any) => any,
+  TError = Error,
+  TContext = unknown,
+>(
+  fn: T,
+  options?: Omit<UseMutationOptions<Data<Awaited<ReturnType<T>>>, TError, Params<ReturnType<T>>, TContext>, 'mutationFn'>
 ) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: any) => {
-      try {
-        let query;
-        
-        switch (options.operation) {
-          case 'insert':
-            query = supabase.from(table).insert(data);
-            break;
-          case 'update':
-            query = supabase.from(table).update(data);
-            if (options.match) {
-              Object.entries(options.match).forEach(([key, value]) => {
-                query = query.eq(key, value);
-              });
-            }
-            break;
-          case 'delete':
-            query = supabase.from(table).delete();
-            if (options.match) {
-              Object.entries(options.match).forEach(([key, value]) => {
-                query = query.eq(key, value);
-              });
-            }
-            break;
-        }
-
-        const { error } = await query;
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        if (error instanceof Error) {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive"
-          });
-        }
-        throw error;
-      }
+  return useMutation<Data<Awaited<ReturnType<T>>>, TError, Params<ReturnType<T>>, TContext>({
+    mutationFn: async (params) => {
+      const result = await fn(params);
+      return (result as any)?.data;
     },
-    onSuccess: () => {
-      // Invalidate the relevant query to trigger a refetch
-      queryClient.invalidateQueries(options.queryKey);
-      
-      if (options.onSuccess) {
-        options.onSuccess();
-      }
-      
-      toast({
-        title: "Success",
-        description: `${options.operation === 'insert' ? 'Created' : options.operation === 'update' ? 'Updated' : 'Deleted'} successfully.`,
-      });
-    }
+    ...options,
   });
 }
+
+// Fix the specific function with the TS error on line 138
+export const invalidateQueries = (client: QueryClient, key: string | string[]) => {
+  const queryKey = Array.isArray(key) ? key : [key];
+  client.invalidateQueries({ queryKey });
+};

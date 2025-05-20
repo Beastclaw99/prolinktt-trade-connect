@@ -1,4 +1,3 @@
-
 import { Database } from "@/integrations/supabase/types";
 
 export type Tables = Database["public"]["Tables"];
@@ -24,3 +23,7 @@ export type ContractStatus = Database["public"]["Enums"]["contract_status"];
 export type InvoiceStatus = Database["public"]["Enums"]["invoice_status"];
 export type PaymentStatus = Database["public"]["Enums"]["payment_status"];
 export type SupportTicketStatus = Database["public"]["Enums"]["support_ticket_status"];
+
+// Add these type definitions if they don't exist
+export type job_status = 'draft' | 'active' | 'in_progress' | 'completed' | 'cancelled';
+export type proposal_status = 'pending' | 'accepted' | 'rejected' | 'withdrawn';

@@ -1,168 +1,227 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Job, Proposal } from "@/types/supabase";
+import { Job, Proposal } from "@/types";
+import { v4 as uuidv4 } from 'uuid';
+import { job_status, proposal_status } from "@/types/supabase";
 
-export const jobService = {
-  // Job CRUD operations
-  async createJob(jobData: Omit<Job, "id" | "created_at" | "updated_at">): Promise<Job | null> {
+export const createJob = async (job: Omit<Job, 'id' | 'created_at'>): Promise<Job> => {
+  try {
+    const jobId = uuidv4();
     const { data, error } = await supabase
       .from('jobs')
-      .insert(jobData)
+      .insert([
+        {
+          id: jobId,
+          ...job,
+        },
+      ])
       .select()
       .single();
 
     if (error) {
-      console.error("Error creating job:", error);
       throw error;
     }
 
-    return data;
-  },
+    return data as Job;
+  } catch (error) {
+    console.error("Error creating job:", error);
+    throw error;
+  }
+};
 
-  async getJob(id: string): Promise<Job | null> {
+export const getJobById = async (jobId: string): Promise<Job | null> => {
+  try {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, client:client_id(id, first_name, last_name, avatar_url, average_rating)')
-      .eq('id', id)
+      .select('*')
+      .eq('id', jobId)
       .single();
 
     if (error) {
-      console.error("Error fetching job:", error);
       throw error;
     }
 
-    return data;
-  },
+    return data as Job;
+  } catch (error) {
+    console.error("Error fetching job by ID:", error);
+    return null;
+  }
+};
 
-  async getJobs(options?: {
-    status?: string;
-    category?: string;
-    client_id?: string;
-    limit?: number;
-    order?: { column: string; ascending: boolean };
-  }): Promise<Job[]> {
-    let query = supabase
+export const updateJobStatus = async (jobId: string, status: job_status): Promise<void> => {
+  try {
+    const { error } = await supabase
       .from('jobs')
-      .select('*, client:client_id(id, first_name, last_name, avatar_url, average_rating)');
+      .update({ status })
+      .eq('id', jobId);
 
-    if (options?.status) {
-      query = query.eq('status', options.status);
-    }
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating job status:', error);
+    throw error;
+  }
+};
 
-    if (options?.category) {
-      query = query.eq('category', options.category);
-    }
-
-    if (options?.client_id) {
-      query = query.eq('client_id', options.client_id);
-    }
-
-    if (options?.order) {
-      query = query.order(options.order.column, { ascending: options.order.ascending });
-    } else {
-      // Default order by created_at
-      query = query.order('created_at', { ascending: false });
-    }
-
-    if (options?.limit) {
-      query = query.limit(options.limit);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Error fetching jobs:", error);
-      throw error;
-    }
-
-    return data || [];
-  },
-
-  async updateJob(id: string, updates: Partial<Job>): Promise<Job | null> {
+export const getAllJobs = async (): Promise<Job[]> => {
+  try {
     const { data, error } = await supabase
       .from('jobs')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error updating job:", error);
       throw error;
     }
 
-    return data;
-  },
+    return data as Job[];
+  } catch (error) {
+    console.error("Error fetching all jobs:", error);
+    return [];
+  }
+};
 
-  async deleteJob(id: string): Promise<void> {
+export const getJobsByClientId = async (clientId: string): Promise<Job[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as Job[];
+  } catch (error) {
+    console.error("Error fetching jobs by client ID:", error);
+    return [];
+  }
+};
+
+export const deleteJob = async (jobId: string): Promise<void> => {
+  try {
     const { error } = await supabase
       .from('jobs')
       .delete()
-      .eq('id', id);
+      .eq('id', jobId);
 
     if (error) {
-      console.error("Error deleting job:", error);
       throw error;
     }
-  },
+  } catch (error) {
+    console.error("Error deleting job:", error);
+  }
+};
 
-  // Proposal operations
-  async createProposal(proposalData: Omit<Proposal, "id" | "created_at" | "updated_at">): Promise<Proposal | null> {
+// Proposals
+export const createProposal = async (proposal: Omit<Proposal, 'id' | 'created_at'>): Promise<Proposal> => {
+  try {
+    const proposalId = uuidv4();
     const { data, error } = await supabase
       .from('proposals')
-      .insert(proposalData)
+      .insert([
+        {
+          id: proposalId,
+          ...proposal,
+        },
+      ])
       .select()
       .single();
 
     if (error) {
-      console.error("Error creating proposal:", error);
       throw error;
     }
 
-    return data;
-  },
+    return data as Proposal;
+  } catch (error) {
+    console.error("Error creating proposal:", error);
+    throw error;
+  }
+};
 
-  async getJobProposals(jobId: string): Promise<Proposal[]> {
+export const getProposalById = async (proposalId: string): Promise<Proposal | null> => {
+  try {
     const { data, error } = await supabase
       .from('proposals')
-      .select('*, professional:professional_id(id, first_name, last_name, avatar_url, average_rating, hourly_rate)')
+      .select('*')
+      .eq('id', proposalId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as Proposal;
+  } catch (error) {
+    console.error("Error fetching proposal by ID:", error);
+    return null;
+  }
+};
+
+export const getProposalsByJobId = async (jobId: string): Promise<Proposal[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('proposals')
+      .select('*')
       .eq('job_id', jobId);
 
     if (error) {
-      console.error("Error fetching job proposals:", error);
       throw error;
     }
 
-    return data || [];
-  },
+    return data as Proposal[];
+  } catch (error) {
+    console.error("Error fetching proposals by job ID:", error);
+    return [];
+  }
+};
 
-  async getProfessionalProposals(professionalId: string): Promise<Proposal[]> {
+export const getProposalsByProfessionalId = async (professionalId: string): Promise<Proposal[]> => {
+  try {
     const { data, error } = await supabase
       .from('proposals')
-      .select('*, job:job_id(id, title, description, status, client_id, budget_min, budget_max, hourly_rate)')
+      .select('*')
       .eq('professional_id', professionalId);
 
     if (error) {
-      console.error("Error fetching professional proposals:", error);
       throw error;
     }
 
-    return data || [];
-  },
+    return data as Proposal[];
+  } catch (error) {
+    console.error("Error fetching proposals by professional ID:", error);
+    return [];
+  }
+};
 
-  async updateProposalStatus(id: string, status: string): Promise<Proposal | null> {
-    const { data, error } = await supabase
+export const updateProposalStatus = async (
+  proposalId: string, 
+  status: proposal_status
+): Promise<void> => {
+  try {
+    const { error } = await supabase
       .from('proposals')
       .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', proposalId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating proposal status:', error);
+    throw error;
+  }
+};
+
+export const deleteProposal = async (proposalId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('proposals')
+      .delete()
+      .eq('id', proposalId);
 
     if (error) {
-      console.error("Error updating proposal status:", error);
       throw error;
     }
-
-    return data;
+  } catch (error) {
+    console.error("Error deleting proposal:", error);
   }
 };

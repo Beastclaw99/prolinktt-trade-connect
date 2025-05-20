@@ -1,9 +1,9 @@
-import { supabase } from "@/integrations/supabase/client";
-import { Job, Proposal } from "@/types";
-import { v4 as uuidv4 } from 'uuid';
-import { job_status, proposal_status } from "@/types/supabase";
 
-export const createJob = async (job: Omit<Job, 'id' | 'created_at'>): Promise<Job> => {
+import { supabase } from "@/integrations/supabase/client";
+import { Job, JobInsert, Proposal, ProposalInsert, job_status, proposal_status } from "@/types";
+import { v4 as uuidv4 } from 'uuid';
+
+export const createJob = async (job: Omit<JobInsert, 'id' | 'created_at'>): Promise<Job> => {
   try {
     const jobId = uuidv4();
     const { data, error } = await supabase
@@ -114,7 +114,7 @@ export const deleteJob = async (jobId: string): Promise<void> => {
 };
 
 // Proposals
-export const createProposal = async (proposal: Omit<Proposal, 'id' | 'created_at'>): Promise<Proposal> => {
+export const createProposal = async (proposal: Omit<ProposalInsert, 'id' | 'created_at'>): Promise<Proposal> => {
   try {
     const proposalId = uuidv4();
     const { data, error } = await supabase

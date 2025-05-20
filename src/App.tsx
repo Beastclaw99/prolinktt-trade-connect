@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -24,6 +25,17 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Helper component to redirect users to their appropriate dashboard
+function DashboardRedirect() {
+  const { profile } = useAuth();
+  
+  if (!profile) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <Navigate to={profile.role === "client" ? "/client-dashboard" : "/professional-dashboard"} replace />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -81,16 +93,5 @@ const App = () => (
     </BrowserRouter>
   </QueryClientProvider>
 );
-
-// Helper component to redirect users to their appropriate dashboard
-function DashboardRedirect() {
-  const { profile } = useAuth();
-  
-  if (!profile) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <Navigate to={profile.role === "client" ? "/client-dashboard" : "/professional-dashboard"} replace />;
-}
 
 export default App;

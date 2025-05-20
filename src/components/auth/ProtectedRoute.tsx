@@ -1,5 +1,5 @@
 
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ userTypes }: ProtectedRouteProps) => {
   const { user, profile, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -21,7 +22,8 @@ const ProtectedRoute = ({ userTypes }: ProtectedRouteProps) => {
 
   // Not authenticated
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Save the attempted URL for redirect after login
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
   
   // Check role-specific access if userTypes is provided and profile is loaded

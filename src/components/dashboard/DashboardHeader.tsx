@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardHeaderProps {
   userType: 'client' | 'professional';
@@ -31,6 +32,7 @@ const DashboardHeader = ({
   isSidebarOpen
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
+  const { signOut, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   
   const handleSearch = (e: React.FormEvent) => {
@@ -39,10 +41,19 @@ const DashboardHeader = ({
     // Implement search functionality
   };
   
-  const handleLogout = () => {
-    // In a real app, handle logout logic here
-    console.log('Logging out');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!profile) return userName.charAt(0).toUpperCase();
+    
+    const firstInitial = profile.first_name?.charAt(0) || "";
+    const lastInitial = profile.last_name?.charAt(0) || "";
+    
+    return (firstInitial + lastInitial).toUpperCase() || userName.charAt(0).toUpperCase();
   };
 
   return (
@@ -80,20 +91,22 @@ const DashboardHeader = ({
         </form>
 
         <div className="flex items-center gap-4 md:gap-6 ml-auto">
-          <Button variant="ghost" size="icon" className="relative text-gray-500">
-            <MessageSquare size={20} />
-            {unreadMessages > 0 && (
-              <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-prolink-green text-[10px] font-medium text-white flex items-center justify-center">
-                {unreadMessages}
-              </span>
-            )}
-          </Button>
+          <Link to={`/${userType}-dashboard/messages`}>
+            <Button variant="ghost" size="icon" className="relative text-gray-500">
+              <MessageSquare size={20} />
+              {unreadMessages > 0 && (
+                <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-prolink-green text-[10px] font-medium text-white flex items-center justify-center">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
+            </Button>
+          </Link>
 
           <Button variant="ghost" size="icon" className="relative text-gray-500">
             <Bell size={20} />
             {unreadNotifications > 0 && (
               <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
-                {unreadNotifications}
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
               </span>
             )}
           </Button>
@@ -102,9 +115,9 @@ const DashboardHeader = ({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-9 w-9 border border-gray-200">
-                  <AvatarImage src={`https://avatar.vercel.sh/${userName}`} alt={userName} />
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={userName} />
                   <AvatarFallback className="bg-gray-100 text-gray-800">
-                    {userName.charAt(0).toUpperCase()}
+                    {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -119,14 +132,18 @@ const DashboardHeader = ({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center gap-2">
-                <User size={16} />
-                <span>My Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center gap-2">
-                <Settings size={16} />
-                <span>Settings</span>
-              </DropdownMenuItem>
+              <Link to={`/${userType}-dashboard/profile`}>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <User size={16} />
+                  <span>My Profile</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link to={`/${userType}-dashboard/settings`}>
+                <DropdownMenuItem className="flex items-center gap-2">
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="flex items-center gap-2" onClick={handleLogout}>
                 <LogOut size={16} />

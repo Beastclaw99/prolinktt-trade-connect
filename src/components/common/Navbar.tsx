@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,11 +12,11 @@ import {
 import { Menu, X, User, Bell, MessageSquare, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile"; // Fixed import name
+import { useIsMobile } from "@/hooks/use-mobile"; // This was previously causing an error
 
 const Navbar = () => {
   const { user, profile, signOut } = useAuth();
-  const isMobile = useIsMobile(); // Use the correct hook directly
+  const isMobile = useIsMobile(); // Now correctly using the hook
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 

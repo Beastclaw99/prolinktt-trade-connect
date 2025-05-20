@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Job, JobInsert, Proposal, ProposalInsert, job_status, proposal_status } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
@@ -6,14 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 export const createJob = async (job: Omit<JobInsert, 'id' | 'created_at'>): Promise<Job> => {
   try {
     const jobId = uuidv4();
+    const jobData: JobInsert = {
+      id: jobId,
+      ...job
+    };
+
     const { data, error } = await supabase
       .from('jobs')
-      .insert([
-        {
-          id: jobId,
-          ...job,
-        },
-      ])
+      .insert([jobData])
       .select()
       .single();
 
@@ -117,14 +116,14 @@ export const deleteJob = async (jobId: string): Promise<void> => {
 export const createProposal = async (proposal: Omit<ProposalInsert, 'id' | 'created_at'>): Promise<Proposal> => {
   try {
     const proposalId = uuidv4();
+    const proposalData: ProposalInsert = {
+      id: proposalId,
+      ...proposal
+    };
+    
     const { data, error } = await supabase
       .from('proposals')
-      .insert([
-        {
-          id: proposalId,
-          ...proposal,
-        },
-      ])
+      .insert([proposalData])
       .select()
       .single();
 

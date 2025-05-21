@@ -400,8 +400,6 @@ export type Database = {
           average_rating: number | null
           bio: string | null
           certifications: string[] | null
-          city: string | null
-          country: string | null
           created_at: string | null
           first_name: string | null
           hourly_rate: number | null
@@ -411,9 +409,7 @@ export type Database = {
           rating_count: number | null
           role: Database["public"]["Enums"]["user_role"]
           skills: string[] | null
-          state: string | null
           updated_at: string | null
-          zip_code: string | null
         }
         Insert: {
           address?: string | null
@@ -421,8 +417,6 @@ export type Database = {
           average_rating?: number | null
           bio?: string | null
           certifications?: string[] | null
-          city?: string | null
-          country?: string | null
           created_at?: string | null
           first_name?: string | null
           hourly_rate?: number | null
@@ -432,9 +426,7 @@ export type Database = {
           rating_count?: number | null
           role: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
-          state?: string | null
           updated_at?: string | null
-          zip_code?: string | null
         }
         Update: {
           address?: string | null
@@ -442,8 +434,6 @@ export type Database = {
           average_rating?: number | null
           bio?: string | null
           certifications?: string[] | null
-          city?: string | null
-          country?: string | null
           created_at?: string | null
           first_name?: string | null
           hourly_rate?: number | null
@@ -453,9 +443,7 @@ export type Database = {
           rating_count?: number | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
-          state?: string | null
           updated_at?: string | null
-          zip_code?: string | null
         }
         Relationships: []
       }

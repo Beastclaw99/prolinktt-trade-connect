@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({
   firstName: z.string().min(2, {
@@ -54,6 +55,7 @@ type FormData = z.infer<typeof formSchema>;
 const RegisterForm = () => {
   const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -75,6 +77,17 @@ const RegisterForm = () => {
         first_name: data.firstName,
         last_name: data.lastName,
         role: data.role,
+      });
+      
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
@@ -176,14 +189,22 @@ const RegisterForm = () => {
                       defaultValue={field.value}
                       value={field.value}
                     >
-                      <FormItem className="flex-1">
+                      <div className="flex-1">
                         <label
-                          htmlFor="client"
-                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 cursor-pointer hover:bg-accent aria-checked:border-primary"
-                          data-state={field.value === "client" ? "checked" : "unchecked"}
+                          className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
+                            field.value === "client" 
+                              ? "border-primary" 
+                              : "border-muted"
+                          }`}
                         >
                           <FormControl>
-                            <RadioGroupItem value="client" id="client" className="sr-only" />
+                            <RadioGroupItem 
+                              value="client" 
+                              id="client" 
+                              className="sr-only" 
+                              checked={field.value === "client"}
+                              onChange={() => field.onChange("client")}
+                            />
                           </FormControl>
                           <div className="flex flex-col items-center justify-center space-y-2">
                             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -195,16 +216,24 @@ const RegisterForm = () => {
                             <div className="text-xs text-muted-foreground text-center">Post jobs and hire skilled tradespeople</div>
                           </div>
                         </label>
-                      </FormItem>
+                      </div>
 
-                      <FormItem className="flex-1">
+                      <div className="flex-1">
                         <label
-                          htmlFor="professional"
-                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 cursor-pointer hover:bg-accent aria-checked:border-primary"
-                          data-state={field.value === "professional" ? "checked" : "unchecked"}
+                          className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
+                            field.value === "professional" 
+                              ? "border-primary" 
+                              : "border-muted"
+                          }`}
                         >
                           <FormControl>
-                            <RadioGroupItem value="professional" id="professional" className="sr-only" />
+                            <RadioGroupItem 
+                              value="professional" 
+                              id="professional" 
+                              className="sr-only"
+                              checked={field.value === "professional"}
+                              onChange={() => field.onChange("professional")} 
+                            />
                           </FormControl>
                           <div className="flex flex-col items-center justify-center space-y-2">
                             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -214,7 +243,7 @@ const RegisterForm = () => {
                             <div className="text-xs text-muted-foreground text-center">Browse job listings and offer your services</div>
                           </div>
                         </label>
-                      </FormItem>
+                      </div>
                     </RadioGroup>
                   </FormControl>
                   <FormMessage />

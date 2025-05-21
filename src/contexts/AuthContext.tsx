@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize session
   useEffect(() => {
+    console.log("AuthProvider: Setting up auth state listener");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("AuthProvider: Initial session check", session ? "found session" : "no session");
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -60,11 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      console.log("AuthProvider: Cleaning up auth state listener");
       subscription.unsubscribe();
     };
   }, []);
 
   async function fetchProfile(userId: string) {
+    console.log("AuthProvider: Fetching profile for user", userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -77,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      console.log("AuthProvider: Profile fetched", data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -84,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signUp(email: string, password: string, metadata: { first_name: string; last_name: string; role: "client" | "professional" }) {
+    console.log("AuthProvider: Signing up with", { email, metadata });
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -94,31 +102,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
+        console.error("Signup error:", error);
         toast({
           title: "Registration failed",
           description: error.message,
           variant: "destructive"
         });
-        return;
+        throw error;
       }
 
+      console.log("AuthProvider: Signup successful", data);
+      
       toast({
         title: "Registration successful",
-        description: "Please check your email for verification link.",
+        description: "Welcome to ProLinkTT!",
       });
 
       // Automatically redirect to appropriate dashboard based on role
+      // Note: The profile might not be immediately available after signup
       if (metadata.role === "client") {
         navigate("/client-dashboard");
       } else {
         navigate("/professional-dashboard");
       }
+      
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
+      throw error;
     }
   }
 

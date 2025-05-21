@@ -9,15 +9,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ userTypes }: ProtectedRouteProps) => {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, refreshProfile } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
     // Log for debugging purposes
-    if (profile) {
+    if (user && profile) {
       console.log("ProtectedRoute: User profile loaded", profile);
+    } else if (user && !profile) {
+      console.log("ProtectedRoute: User authenticated but profile not loaded, refreshing...");
+      refreshProfile(user.id);
     }
-  }, [profile]);
+  }, [user, profile, refreshProfile]);
 
   if (isLoading) {
     return (

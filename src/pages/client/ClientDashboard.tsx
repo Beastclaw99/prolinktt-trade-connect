@@ -13,14 +13,19 @@ const ClientDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, refreshProfile } = useAuth();
   
   useEffect(() => {
+    // If user is loaded but profile is not, try to refresh it
+    if (user && !profile) {
+      refreshProfile(user.id);
+    }
     // If user is loaded but doesn't have the correct role, redirect
-    if (profile && profile.role !== 'client') {
+    else if (profile && profile.role !== 'client') {
+      console.log("ClientDashboard: User is not a client, redirecting to professional dashboard");
       navigate('/professional-dashboard');
     }
-  }, [profile, navigate]);
+  }, [user, profile, navigate, refreshProfile]);
 
   // Get unread messages count
   const { data: unreadMessages = 0 } = useQuery({
@@ -39,7 +44,7 @@ const ClientDashboard = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
   
-  if (isLoading) {
+  if (isLoading || !profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-prolink-blue" />

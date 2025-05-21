@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -42,6 +44,8 @@ type FormData = z.infer<typeof formSchema>;
 const LoginForm = () => {
   const { signIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -54,13 +58,25 @@ const LoginForm = () => {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
+    setError(null);
     
     try {
       await signIn(data.email, data.password);
+      // Navigation is handled in the AuthContext
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setError(error.message || "Failed to sign in. Please check your credentials and try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Get redirect parameter from URL if it exists
+  const params = new URLSearchParams(location.search);
+  const redirectParam = params.get('redirect');
+  const redirectMessage = redirectParam 
+    ? "Please log in to access this page." 
+    : null;
 
   return (
     <Card className="w-full max-w-md">
@@ -71,6 +87,22 @@ const LoginForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {redirectMessage && (
+          <Alert className="mb-4 bg-blue-50 border-blue-200">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-600">
+              {redirectMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {error && (
+          <Alert className="mb-4 bg-destructive/10 border-destructive/30 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -80,7 +112,7 @@ const LoginForm = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="john@example.com" {...field} />
+                    <Input placeholder="john@example.com" {...field} autoComplete="email" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -99,7 +131,7 @@ const LoginForm = () => {
                     </Link>
                   </div>
                   <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
+                    <Input type="password" placeholder="********" {...field} autoComplete="current-password" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

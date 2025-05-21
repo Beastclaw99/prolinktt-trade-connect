@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Database } from "@/integrations/supabase/types";
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -17,6 +17,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
+  refreshProfile: (userId: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +29,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Fetch profile function
+  const fetchProfile = async (userId: string) => {
+    try {
+      console.log("AuthProvider: Fetching profile for user", userId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+
+      console.log("AuthProvider: Profile fetched", data);
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   // Initialize session
   useEffect(() => {
@@ -35,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log("Auth state changed:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
@@ -69,27 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  async function fetchProfile(userId: string) {
-    console.log("AuthProvider: Fetching profile for user", userId);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        return;
-      }
-
-      console.log("AuthProvider: Profile fetched", data);
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  }
-
+  // Sign up function
   async function signUp(email: string, password: string, metadata: { first_name: string; last_name: string; role: "client" | "professional" }) {
     console.log("AuthProvider: Signing up with", { email, metadata });
     try {
@@ -118,8 +122,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Welcome to ProLinkTT!",
       });
       
-      // Let the onAuthStateChange handle the redirect
-      // This ensures the profile is properly loaded before redirecting
+      // Redirect to the appropriate dashboard based on role
+      const dashboardPath = metadata.role === "client" ? "/client-dashboard" : "/professional-dashboard";
+      navigate(dashboardPath);
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -131,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Sign in function
   async function signIn(email: string, password: string) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -147,12 +153,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
+      // Get redirect path from URL or default to dashboard
+      const params = new URLSearchParams(location.search);
+      const redirectTo = params.get('redirect') || "/dashboard";
+
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
 
-      // Let the onAuthStateChange handle the redirect
+      navigate(redirectTo);
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -163,6 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Sign out function
   async function signOut() {
     try {
       const { error } = await supabase.auth.signOut();
@@ -192,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Update profile function
   async function updateProfile(data: Partial<Profile>) {
     if (!user) {
       toast({
@@ -233,6 +245,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Function to refresh the profile manually
+  async function refreshProfile(userId: string) {
+    await fetchProfile(userId);
+  }
+
   const value = {
     session,
     user,
@@ -242,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signOut,
     updateProfile,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

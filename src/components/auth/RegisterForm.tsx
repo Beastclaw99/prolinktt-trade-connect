@@ -28,6 +28,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
+// Form schema with validation
 const formSchema = z.object({
   firstName: z.string().min(2, {
     message: "First name must be at least 2 characters.",
@@ -51,6 +52,42 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+// Components
+const RoleOption = ({ 
+  value, 
+  icon, 
+  title, 
+  description, 
+  selected 
+}: { 
+  value: "client" | "professional", 
+  icon: JSX.Element, 
+  title: string, 
+  description: string,
+  selected: boolean
+}) => (
+  <FormItem className="flex-1">
+    <FormControl>
+      <label
+        className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
+          selected ? "border-primary" : "border-muted"
+        }`}
+      >
+        <RadioGroupItem 
+          value={value} 
+          id={value} 
+          className="sr-only" 
+        />
+        <div className="flex flex-col items-center justify-center space-y-2">
+          {icon}
+          <div className="font-medium">{title}</div>
+          <div className="text-xs text-muted-foreground text-center">{description}</div>
+        </div>
+      </label>
+    </FormControl>
+  </FormItem>
+);
 
 const RegisterForm = () => {
   const { signUp } = useAuth();
@@ -79,25 +116,32 @@ const RegisterForm = () => {
         last_name: data.lastName,
         role: data.role,
       });
-      
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created successfully.",
-      });
-      
-      // Navigate to the appropriate dashboard based on role
-      navigate(data.role === "client" ? "/client-dashboard" : "/professional-dashboard");
+      // Navigation is handled in the AuthContext after successful signup
     } catch (error: any) {
       console.error("Registration error:", error);
-      toast({
-        title: "Registration failed",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive"
-      });
+      // Toast is handled in the AuthContext
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Get the current selected role value
+  const roleValue = form.watch("role");
+
+  // Icons
+  const clientIcon = (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19 16V7C19 5.89543 18.1046 5 17 5H7C5.89543 5 5 5.89543 5 7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3 16H21V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+
+  const professionalIcon = (
+    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 6L16.5 3.5L18 5L15.5 7.5M14 6L15.5 7.5M14 6L11.5 8.5M15.5 7.5L11.5 11.5M11.5 8.5L4 16V20H8L15.5 12.5M11.5 8.5L11.5 11.5M11.5 11.5L15.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 
   return (
     <Card className="w-full max-w-md">
@@ -193,57 +237,21 @@ const RegisterForm = () => {
                       value={field.value}
                       onValueChange={field.onChange}
                     >
-                      <FormItem className="flex-1">
-                        <FormControl>
-                          <label
-                            className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
-                              field.value === "client" 
-                                ? "border-primary" 
-                                : "border-muted"
-                            }`}
-                          >
-                            <RadioGroupItem 
-                              value="client" 
-                              id="client" 
-                              className="sr-only" 
-                            />
-                            <div className="flex flex-col items-center justify-center space-y-2">
-                              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M19 16V7C19 5.89543 18.1046 5 17 5H7C5.89543 5 5 5.89543 5 7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M3 16H21V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M12 5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              <div className="font-medium">Hire Professionals</div>
-                              <div className="text-xs text-muted-foreground text-center">Post jobs and hire skilled tradespeople</div>
-                            </div>
-                          </label>
-                        </FormControl>
-                      </FormItem>
-
-                      <FormItem className="flex-1">
-                        <FormControl>
-                          <label
-                            className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
-                              field.value === "professional" 
-                                ? "border-primary" 
-                                : "border-muted"
-                            }`}
-                          >
-                            <RadioGroupItem 
-                              value="professional" 
-                              id="professional" 
-                              className="sr-only"
-                            />
-                            <div className="flex flex-col items-center justify-center space-y-2">
-                              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M14 6L16.5 3.5L18 5L15.5 7.5M14 6L15.5 7.5M14 6L11.5 8.5M15.5 7.5L11.5 11.5M11.5 8.5L4 16V20H8L15.5 12.5M11.5 8.5L11.5 11.5M11.5 11.5L15.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              <div className="font-medium">Find Work</div>
-                              <div className="text-xs text-muted-foreground text-center">Browse job listings and offer your services</div>
-                            </div>
-                          </label>
-                        </FormControl>
-                      </FormItem>
+                      <RoleOption 
+                        value="client" 
+                        icon={clientIcon}
+                        title="Hire Professionals"
+                        description="Post jobs and hire skilled tradespeople"
+                        selected={roleValue === "client"}
+                      />
+                      
+                      <RoleOption 
+                        value="professional" 
+                        icon={professionalIcon}
+                        title="Find Work"
+                        description="Browse job listings and offer your services"
+                        selected={roleValue === "professional"}
+                      />
                     </RadioGroup>
                   </FormControl>
                   <FormMessage />

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +56,7 @@ const RegisterForm = () => {
   const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -83,7 +84,11 @@ const RegisterForm = () => {
         title: "Registration successful",
         description: "Your account has been created successfully.",
       });
+      
+      // Navigate to the appropriate dashboard based on role
+      navigate(data.role === "client" ? "/client-dashboard" : "/professional-dashboard");
     } catch (error: any) {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
         description: error.message || "An unexpected error occurred",
@@ -185,65 +190,60 @@ const RegisterForm = () => {
                   <FormControl>
                     <RadioGroup
                       className="flex flex-col md:flex-row gap-4"
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
                       value={field.value}
+                      onValueChange={field.onChange}
                     >
-                      <div className="flex-1">
-                        <label
-                          className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
-                            field.value === "client" 
-                              ? "border-primary" 
-                              : "border-muted"
-                          }`}
-                        >
-                          <FormControl>
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <label
+                            className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
+                              field.value === "client" 
+                                ? "border-primary" 
+                                : "border-muted"
+                            }`}
+                          >
                             <RadioGroupItem 
                               value="client" 
                               id="client" 
                               className="sr-only" 
-                              checked={field.value === "client"}
-                              onChange={() => field.onChange("client")}
                             />
-                          </FormControl>
-                          <div className="flex flex-col items-center justify-center space-y-2">
-                            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M19 16V7C19 5.89543 18.1046 5 17 5H7C5.89543 5 5 5.89543 5 7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M3 16H21V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M12 5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            <div className="font-medium">Hire Professionals</div>
-                            <div className="text-xs text-muted-foreground text-center">Post jobs and hire skilled tradespeople</div>
-                          </div>
-                        </label>
-                      </div>
+                            <div className="flex flex-col items-center justify-center space-y-2">
+                              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 16V7C19 5.89543 18.1046 5 17 5H7C5.89543 5 5 5.89543 5 7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M3 16H21V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <div className="font-medium">Hire Professionals</div>
+                              <div className="text-xs text-muted-foreground text-center">Post jobs and hire skilled tradespeople</div>
+                            </div>
+                          </label>
+                        </FormControl>
+                      </FormItem>
 
-                      <div className="flex-1">
-                        <label
-                          className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
-                            field.value === "professional" 
-                              ? "border-primary" 
-                              : "border-muted"
-                          }`}
-                        >
-                          <FormControl>
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <label
+                            className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
+                              field.value === "professional" 
+                                ? "border-primary" 
+                                : "border-muted"
+                            }`}
+                          >
                             <RadioGroupItem 
                               value="professional" 
                               id="professional" 
                               className="sr-only"
-                              checked={field.value === "professional"}
-                              onChange={() => field.onChange("professional")} 
                             />
-                          </FormControl>
-                          <div className="flex flex-col items-center justify-center space-y-2">
-                            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M14 6L16.5 3.5L18 5L15.5 7.5M14 6L15.5 7.5M14 6L11.5 8.5M15.5 7.5L11.5 11.5M11.5 8.5L4 16V20H8L15.5 12.5M11.5 8.5L11.5 11.5M11.5 11.5L15.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            <div className="font-medium">Find Work</div>
-                            <div className="text-xs text-muted-foreground text-center">Browse job listings and offer your services</div>
-                          </div>
-                        </label>
-                      </div>
+                            <div className="flex flex-col items-center justify-center space-y-2">
+                              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 6L16.5 3.5L18 5L15.5 7.5M14 6L15.5 7.5M14 6L11.5 8.5M15.5 7.5L11.5 11.5M11.5 8.5L4 16V20H8L15.5 12.5M11.5 8.5L11.5 11.5M11.5 11.5L15.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              <div className="font-medium">Find Work</div>
+                              <div className="text-xs text-muted-foreground text-center">Browse job listings and offer your services</div>
+                            </div>
+                          </label>
+                        </FormControl>
+                      </FormItem>
                     </RadioGroup>
                   </FormControl>
                   <FormMessage />

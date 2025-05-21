@@ -40,8 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        // Defer profile fetching with setTimeout to prevent potential deadlock
         if (currentSession?.user) {
+          // Use setTimeout to prevent deadlock
           setTimeout(() => {
             fetchProfile(currentSession.user.id);
           }, 0);
@@ -117,19 +117,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Registration successful",
         description: "Welcome to ProLinkTT!",
       });
-
-      // Automatically redirect to appropriate dashboard based on role
-      // Note: The profile might not be immediately available after signup
-      if (metadata.role === "client") {
-        navigate("/client-dashboard");
-      } else {
-        navigate("/professional-dashboard");
-      }
       
+      // Let the onAuthStateChange handle the redirect
+      // This ensures the profile is properly loaded before redirecting
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
-        title: "Error",
+        title: "Registration failed",
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
@@ -150,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: error.message,
           variant: "destructive"
         });
-        return;
+        throw error;
       }
 
       toast({
@@ -158,26 +152,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Welcome back!",
       });
 
-      // Redirect based on user role after successful login
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileData) {
-        if (profileData.role === "client") {
-          navigate("/client-dashboard");
-        } else {
-          navigate("/professional-dashboard");
-        }
-      }
+      // Let the onAuthStateChange handle the redirect
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: "Login failed",
         description: error.message || "An unexpected error occurred",
         variant: "destructive"
       });
+      throw error;
     }
   }
 
@@ -191,14 +173,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: error.message,
           variant: "destructive"
         });
-        return;
+        throw error;
       }
 
-      // Clear local user data
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-
+      // The auth state listener will handle clearing the user state
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
@@ -215,7 +193,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updateProfile(data: Partial<Profile>) {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase
@@ -229,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           description: error.message,
           variant: "destructive"
         });
-        return;
+        throw error;
       }
 
       // Refresh profile data

@@ -1,18 +1,27 @@
 
 import { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getUnreadMessagesCount } from "@/services/message.service";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import Sidebar from "@/components/dashboard/Sidebar";
 import ClientDashboardOverview from "@/components/dashboard/client/ClientDashboardOverview";
+import { Loader2 } from "lucide-react";
 
 const ClientDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, profile } = useAuth();
+  const navigate = useNavigate();
+  const { user, profile, isLoading } = useAuth();
   
+  useEffect(() => {
+    // If user is loaded but doesn't have the correct role, redirect
+    if (profile && profile.role !== 'client') {
+      navigate('/professional-dashboard');
+    }
+  }, [profile, navigate]);
+
   // Get unread messages count
   const { data: unreadMessages = 0 } = useQuery({
     queryKey: ['unreadMessages', user?.id],
@@ -29,6 +38,15 @@ const ClientDashboard = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-prolink-blue" />
+        <span className="text-prolink-blue font-medium">Loading client dashboard...</span>
+      </div>
+    );
+  }
   
   // Display the full name if available, otherwise fallback to "Client"
   const displayName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : "Client";

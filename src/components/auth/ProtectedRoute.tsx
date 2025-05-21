@@ -1,4 +1,5 @@
 
+import React, { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -11,11 +12,18 @@ const ProtectedRoute = ({ userTypes }: ProtectedRouteProps) => {
   const { user, profile, isLoading } = useAuth();
   const location = useLocation();
 
+  useEffect(() => {
+    // Log for debugging purposes
+    if (profile) {
+      console.log("ProtectedRoute: User profile loaded", profile);
+    }
+  }, [profile]);
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-prolink-blue" />
-        <span className="ml-2">Loading...</span>
+        <span className="text-prolink-blue font-medium">Loading your profile...</span>
       </div>
     );
   }

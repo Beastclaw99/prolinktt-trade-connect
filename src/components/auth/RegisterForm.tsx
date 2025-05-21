@@ -1,9 +1,8 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,89 +13,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
-
-// Form schema with validation
-const formSchema = z.object({
-  firstName: z.string().min(2, {
-    message: "First name must be at least 2 characters.",
-  }),
-  lastName: z.string().min(2, {
-    message: "Last name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
-  confirmPassword: z.string(),
-  role: z.enum(["client", "professional"], {
-    required_error: "Please select a user type.",
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"],
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-// Components
-const RoleOption = ({ 
-  value, 
-  icon, 
-  title, 
-  description, 
-  selected 
-}: { 
-  value: "client" | "professional", 
-  icon: JSX.Element, 
-  title: string, 
-  description: string,
-  selected: boolean
-}) => (
-  <FormItem className="flex-1">
-    <FormControl>
-      <label
-        className={`flex flex-col items-center justify-between rounded-md border-2 p-4 cursor-pointer hover:bg-accent ${
-          selected ? "border-primary" : "border-muted"
-        }`}
-      >
-        <RadioGroupItem 
-          value={value} 
-          id={value} 
-          className="sr-only" 
-        />
-        <div className="flex flex-col items-center justify-center space-y-2">
-          {icon}
-          <div className="font-medium">{title}</div>
-          <div className="text-xs text-muted-foreground text-center">{description}</div>
-        </div>
-      </label>
-    </FormControl>
-  </FormItem>
-);
+import { registerFormSchema, RegisterFormData } from "./schemas/registerFormSchema";
+import RegisterFormFields from "./RegisterFormFields";
+import LegalLinks from "./LegalLinks";
 
 const RegisterForm = () => {
   const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<RegisterFormData>({
+    resolver: zodResolver(registerFormSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -107,7 +36,7 @@ const RegisterForm = () => {
     },
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: RegisterFormData) => {
     setIsSubmitting(true);
     
     try {
@@ -125,24 +54,6 @@ const RegisterForm = () => {
     }
   };
 
-  // Get the current selected role value
-  const roleValue = form.watch("role");
-
-  // Icons
-  const clientIcon = (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M19 16V7C19 5.89543 18.1046 5 17 5H7C5.89543 5 5 5.89543 5 7V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3 16H21V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M12 5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-
-  const professionalIcon = (
-    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 6L16.5 3.5L18 5L15.5 7.5M14 6L15.5 7.5M14 6L11.5 8.5M15.5 7.5L11.5 11.5M11.5 8.5L4 16V20H8L15.5 12.5M11.5 8.5L11.5 11.5M11.5 11.5L15.5 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -154,110 +65,7 @@ const RegisterForm = () => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="john@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>I want to...</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      className="flex flex-col md:flex-row gap-4"
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <RoleOption 
-                        value="client" 
-                        icon={clientIcon}
-                        title="Hire Professionals"
-                        description="Post jobs and hire skilled tradespeople"
-                        selected={roleValue === "client"}
-                      />
-                      
-                      <RoleOption 
-                        value="professional" 
-                        icon={professionalIcon}
-                        title="Find Work"
-                        description="Browse job listings and offer your services"
-                        selected={roleValue === "professional"}
-                      />
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <RegisterFormFields />
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
@@ -272,17 +80,7 @@ const RegisterForm = () => {
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
-        <div className="text-sm text-center">
-          By signing up, you agree to our{" "}
-          <Link to="#" className="text-prolink-blue hover:underline">
-            Terms of Service
-          </Link>{" "}
-          and{" "}
-          <Link to="#" className="text-prolink-blue hover:underline">
-            Privacy Policy
-          </Link>
-          .
-        </div>
+        <LegalLinks />
         <div className="text-sm text-center">
           Already have an account?{" "}
           <Link to="/login" className="text-prolink-blue hover:underline font-medium">

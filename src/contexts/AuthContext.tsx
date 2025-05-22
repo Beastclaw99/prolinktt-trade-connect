@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
-  refreshProfile: (userId: string) => Promise<void>;
+  refreshProfile: (userId: string) => Promise<Profile | null>; // Updated return type to match implementation
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

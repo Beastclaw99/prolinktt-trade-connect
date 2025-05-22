@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { registerFormSchema, RegisterFormData } from "./schemas/registerFormSchema";
 import RegisterFormFields from "./RegisterFormFields";
@@ -22,6 +23,7 @@ import LegalLinks from "./LegalLinks";
 
 const RegisterForm = () => {
   const { signUp } = useAuth();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<RegisterFormData>({
@@ -40,6 +42,7 @@ const RegisterForm = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Submitting registration form:", { ...data, password: "***" });
       await signUp(data.email, data.password, {
         first_name: data.firstName,
         last_name: data.lastName,
@@ -48,7 +51,11 @@ const RegisterForm = () => {
       // Navigation is handled in the AuthContext after successful signup
     } catch (error: any) {
       console.error("Registration error:", error);
-      // Toast is handled in the AuthContext
+      toast({
+        title: "Registration failed",
+        description: error?.message || "An unexpected error occurred during registration. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }

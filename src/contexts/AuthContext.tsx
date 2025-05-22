@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,10 +30,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch profile function
-  const fetchProfile = async (userId: string) => {
+  // Fetch profile function with retry logic
+  const fetchProfile = async (userId: string, retryCount = 0): Promise<Profile | null> => {
     try {
-      console.log("AuthProvider: Fetching profile for user", userId);
+      console.log(`AuthProvider: Fetching profile for user ${userId}, attempt ${retryCount + 1}`);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -43,13 +42,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching user profile:', error);
-        return;
+        
+        // If profile not found and we haven't retried too many times,
+        // wait a bit and try again (could be database replication lag)
+        if (error.code === 'PGRST116' && retryCount < 3) {
+          console.log(`Profile not found, retrying in ${(retryCount + 1) * 500}ms...`);
+          return new Promise((resolve) => {
+            setTimeout(async () => {
+              const result = await fetchProfile(userId, retryCount + 1);
+              resolve(result);
+            }, (retryCount + 1) * 500);
+          });
+        }
+        return null;
       }
 
       console.log("AuthProvider: Profile fetched", data);
       setProfile(data);
+      return data;
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error in fetchProfile:', error);
+      return null;
     }
   };
 
@@ -59,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         console.log("Auth state changed:", event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
@@ -122,9 +135,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Welcome to ProLinkTT!",
       });
       
-      // Redirect to the appropriate dashboard based on role
-      const dashboardPath = metadata.role === "client" ? "/client-dashboard" : "/professional-dashboard";
-      navigate(dashboardPath);
+      // Wait a moment for the profile to be created via the database trigger
+      setTimeout(async () => {
+        if (data.user) {
+          const profile = await fetchProfile(data.user.id);
+          
+          // Redirect to the appropriate dashboard based on role
+          const dashboardPath = metadata.role === "client" 
+            ? "/client-dashboard" 
+            : "/professional-dashboard";
+            
+          navigate(dashboardPath);
+        }
+      }, 500);
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -162,7 +185,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Welcome back!",
       });
 
-      navigate(redirectTo);
+      // Wait briefly for profile to load before navigating
+      setTimeout(async () => {
+        if (data.user) {
+          const fetchedProfile = await fetchProfile(data.user.id);
+          
+          if (fetchedProfile?.role === "client") {
+            navigate("/client-dashboard");
+          } else if (fetchedProfile?.role === "professional") {
+            navigate("/professional-dashboard");
+          } else {
+            navigate(redirectTo); // Fallback
+          }
+        }
+      }, 300);
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -245,9 +281,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Function to refresh the profile manually
+  // Function to refresh the profile manually with retry logic
   async function refreshProfile(userId: string) {
-    await fetchProfile(userId);
+    return await fetchProfile(userId);
   }
 
   const value = {

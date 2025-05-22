@@ -174,10 +174,8 @@ export type Database = {
           end_date: string | null
           hourly_rate: number | null
           id: string
-          is_remote: boolean | null
           job_type: Database["public"]["Enums"]["job_type"]
           location: string | null
-          requirements: string | null
           skills_required: string[] | null
           start_date: string | null
           status: Database["public"]["Enums"]["job_status"] | null
@@ -196,10 +194,8 @@ export type Database = {
           end_date?: string | null
           hourly_rate?: number | null
           id?: string
-          is_remote?: boolean | null
           job_type: Database["public"]["Enums"]["job_type"]
           location?: string | null
-          requirements?: string | null
           skills_required?: string[] | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["job_status"] | null
@@ -218,10 +214,8 @@ export type Database = {
           end_date?: string | null
           hourly_rate?: number | null
           id?: string
-          is_remote?: boolean | null
           job_type?: Database["public"]["Enums"]["job_type"]
           location?: string | null
-          requirements?: string | null
           skills_required?: string[] | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["job_status"] | null
@@ -407,7 +401,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           rating_count: number | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: Database["public"]["Enums"]["user_role"] | null
           skills: string[] | null
           updated_at: string | null
         }
@@ -424,7 +418,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           rating_count?: number | null
-          role: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           skills?: string[] | null
           updated_at?: string | null
         }
@@ -441,7 +435,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           rating_count?: number | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           skills?: string[] | null
           updated_at?: string | null
         }
